@@ -2,6 +2,7 @@ package com.coolweather.android;
 
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -40,7 +41,7 @@ public class ChooseAreaFragment extends Fragment {
 
     public static final int LEVEL_CITY=1;
 
-    public static final int LEVEL_COUNTY=3;
+    public static final int LEVEL_COUNTY=2;
 
     private ProgressDialog progressDialog;
 
@@ -52,7 +53,7 @@ public class ChooseAreaFragment extends Fragment {
 
     private ArrayAdapter<String>adapter;
 
-    private ArrayList<String>dataList=new ArrayList<>();
+    private List<String>dataList=new ArrayList<>();
 
     /**
      * 省列表
@@ -109,6 +110,12 @@ public class ChooseAreaFragment extends Fragment {
                 }else if(currentLevel==LEVEL_CITY){
                     selectedCity=cityList.get(position);
                     querryCounties();
+                }else if(currentLevel==LEVEL_COUNTY){
+                    String weatherId=countyList.get(position).getWeatherId();
+                    Intent intent=new Intent(getActivity(),WeatherActivity.class);
+                    intent.putExtra("weather_id",weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
@@ -129,7 +136,7 @@ public class ChooseAreaFragment extends Fragment {
     /**
      * 查询全国所有的省份，优先从数据库查询，如果没有就从服务器上去查询
      */
-    private void    querryProvince(){
+    private void  querryProvince(){
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
         provinceList= DataSupport.findAll(Province.class);
