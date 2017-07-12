@@ -4,10 +4,14 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -52,6 +56,14 @@ public class WeatherActivity extends AppCompatActivity {
 
     private ImageView bingPicImg;
 
+    public SwipeRefreshLayout refreshLayout;
+
+    private String mWeatherId;
+
+    public DrawerLayout drawerLayout;
+
+    private Button navButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,18 +88,37 @@ public class WeatherActivity extends AppCompatActivity {
         carWashText=(TextView)findViewById(R.id.car_wash_text);
         sportText=(TextView)findViewById(R.id.sport_text);
         bingPicImg=(ImageView)findViewById(R.id.bing_pic_img);
+        refreshLayout=(SwipeRefreshLayout)findViewById(R.id.swipe_refresh);
+        refreshLayout.setColorSchemeResources(R.color.colorPrimary);
+        drawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
+        navButton=(Button)findViewById(R.id.nav_button);
+
+        navButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
         SharedPreferences pref= PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString= pref.getString("weather",null);
         if(weatherString!=null){
             //有缓存直接解析天气数据
             Weather weather= Utility.handleWeatherResponse(weatherString);
+            mWeatherId =weather.basic.weatherId;
             showWeatherInfo(weather);
         }else {
             //无缓存数据时去服务器查询天气
-            String weatherId=getIntent().getStringExtra("weather_id");
+            mWeatherId=getIntent().getStringExtra("weather_id");
+//            String weatherId=getIntent().getStringExtra("weather_id");
             weatherLayout.setVisibility(View.INVISIBLE);
-            requestWeather(weatherId);
+            requestWeather(mWeatherId);
         }
+        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requestWeather(mWeatherId);
+            }
+        });
 
         String bingPic=pref.getString("bing_pic",null);
         if(bingPic!=null){
@@ -97,9 +128,7 @@ public class WeatherActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 处理并展示Weather实体类中的数据
-     */
+
     /**
      * 处理并展示Weather实体类中的数据。
      */
@@ -146,7 +175,7 @@ public class WeatherActivity extends AppCompatActivity {
      * 根据天气id请求天气信息
      * @param weatherId
      */
-    private void requestWeather(String weatherId){
+    public void requestWeather(String weatherId){
         String weatherUrl="http://guolin.tech/api/weather?cityid="+weatherId+"&key=ab011b8f1acb4c1487a70ff9e6442c5c";
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
             @Override
@@ -156,8 +185,10 @@ public class WeatherActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
+                        refreshLayout.setRefreshing(false);
                     }
                 });
+                loadBingPic();
             }
 
             @Override
@@ -175,12 +206,14 @@ public class WeatherActivity extends AppCompatActivity {
                         }else {
                             Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
                         }
+                        refreshLayout.setRefreshing(false);
                     }
                 });
+
             }
         });
 
-        loadBingPic();
+
     }
 
 
